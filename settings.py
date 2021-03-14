@@ -17,6 +17,8 @@ USERNAME = getenv("USERNAME")
 if not USERNAME:
     raise RuntimeError
 
+DATABASE_URL = f"sqlite:///{USERNAME}.sqlite"
+
 DATA_DIR = Path(BASE_DIR, "data", USERNAME)
 
 LOGGING = {

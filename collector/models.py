@@ -1,35 +1,51 @@
-from dataclasses import dataclass
-from datetime import datetime
-from typing import Optional, Union
+import ormar
+
+from .db import database, metadata
 
 
-@dataclass
-class TgBase:
-    id: Union[str, int]
-    archived: bool
+class BaseMeta(ormar.ModelMeta):
+    metadata = metadata
+    database = database
 
 
-@dataclass
-class TgChannel(TgBase):
-    title: str
-    username: Optional[str]
-    about: Optional[str]
+class Channel(ormar.Model):
+    class Meta(BaseMeta):
+        tablename = "channels"
+
+    id = ormar.Integer(primary_key=True)
+    dialog_id = ormar.BigInteger(nullable=True)
+    archived = ormar.Boolean(default=False)
+
+    title = ormar.String(max_length=255)
+    username = ormar.String(max_length=255, nullable=True)
+    about = ormar.Text(nullable=True)
 
 
-@dataclass
-class TgGroup(TgBase):
-    title: str
-    participants_count: int
-    date: datetime
-    creator: bool
+class Group(ormar.Model):
+    class Meta(BaseMeta):
+        tablename = "groups"
+
+    id = ormar.Integer(primary_key=True)
+    dialog_id = ormar.Integer()
+    archived = ormar.Boolean(default=False)
+
+    participants_count = ormar.Integer()
+    title = ormar.String(max_length=255)
+    creator = ormar.Boolean(default=False)
 
 
-@dataclass
-class TgUser(TgBase):
-    first_name: str
-    last_name: Optional[str]
-    username: Optional[str]
-    bio: Optional[str]
-    is_bot: bool
-    contact: bool
-    last_message: Optional[str]
+class User(ormar.Model):
+    class Meta(BaseMeta):
+        tablename = "users"
+
+    id = ormar.Integer(primary_key=True)
+    dialog_id = ormar.Integer()
+    archived = ormar.Boolean(default=False)
+
+    first_name = ormar.String(max_length=255, nullable=True)
+    last_name = ormar.String(max_length=255, nullable=True)
+    username = ormar.String(max_length=255, nullable=True)
+    bio = ormar.Text(nullable=True)
+    is_bot = ormar.Boolean(default=False)
+    contact = ormar.Boolean(default=False)
+    last_message = ormar.Text(nullable=True)
