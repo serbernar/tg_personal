@@ -8,7 +8,10 @@ BASE_DIR = Path(".")
 ENV_FILE = getenv("ENV_FILE", ".env")
 load_dotenv(ENV_FILE)
 
-API_ID = int(getenv("API_ID"))
-API_HASH = getenv("API_HASH")
-USERNAME = getenv("USERNAME", "")
+API_ID = 3472745
+API_HASH = "5ecf99afe75faf6c60a4350cd56002e8"
+USERNAME = getenv("USERNAME")
+if not USERNAME:
+    raise RuntimeError
+
 DATA_DIR = Path(BASE_DIR, "data", USERNAME)

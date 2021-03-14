@@ -4,11 +4,12 @@ import time
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, Tuple, Union
 
 from telethon.sync import TelegramClient
 from telethon.tl.custom.dialog import Dialog
 from telethon.tl.functions.channels import GetFullChannelRequest
+from telethon.tl.functions.users import GetFullUserRequest
 
 import settings
 
@@ -46,6 +47,7 @@ class TgUser:
     first_name: str
     last_name: Optional[str]
     username: Optional[str]
+    bio: Optional[str]
     is_bot: bool
     contact: bool
     archived: bool
@@ -75,11 +77,14 @@ def get_group_from_dialog(dialog: Dialog) -> TgGroup:
     )
 
 
-def get_user_from_dialog(dialog: Dialog) -> TgUser:
+async def get_user_from_dialog(dialog: Dialog) -> TgUser:
+    client = get_client()
+    full = await client(GetFullUserRequest(dialog))
     return TgUser(
         first_name=dialog.entity.first_name,
         last_name=dialog.entity.last_name,
         username=dialog.entity.username,
+        bio=full.about,
         is_bot=dialog.entity.bot,
         contact=dialog.entity.contact,
         archived=dialog.archived,
@@ -88,12 +93,12 @@ def get_user_from_dialog(dialog: Dialog) -> TgUser:
 
 async def get_channel_from_dialog(dialog: Dialog) -> TgChannel:
     client = get_client()
-    channel_full = await client(GetFullChannelRequest(channel=dialog.title))
+    full = await client(GetFullChannelRequest(channel=dialog.title))
     return TgChannel(
         title=dialog.title,
         username=dialog.entity.username,
         archived=dialog.archived,
-        about=channel_full.full_chat.about,
+        about=full.full_chat.about,
     )
 
 
@@ -110,15 +115,39 @@ async def get_dialogs(
         return dialogs
 
 
-def save_groups(groups: Optional[List[TgGroup]]):
-    if not groups:
+def store_data(
+    objects: Union[List[TgUser], List[TgGroup], List[TgChannel]],
+    filename: str,
+    header_attributes_map: List[Union[str, Tuple[str], Tuple[str, str]]],
+):
+    if not objects:
         return
-    print(f"Collected {len(groups)} groups")
-    with open(Path(settings.DATA_DIR, "groups.csv"), "w") as f:
+
+    name = filename
+
+    def normalize(attr) -> Tuple[str, str]:
+        if isinstance(attr, str):
+            return attr, attr
+        if len(attr) == 1:
+            return attr[0], attr[0]
+        return attr
+
+    normalized_header_attributes_map: List[Tuple[str, str]] = [
+        normalize(header_attribute) for header_attribute in header_attributes_map
+    ]
+    header = [i[0] for i in normalized_header_attributes_map]
+    attributes = [i[1] for i in normalized_header_attributes_map]
+
+    filename = f"{filename}.csv"
+    path = Path(settings.DATA_DIR, filename)
+
+    with open(Path(settings.DATA_DIR, filename), "w") as f:
         writer = csv.writer(f)
-        writer.writerow(["title", "participants_count", "creator", "archived"])
-        for group in groups:
-            writer.writerow([group.title, group.participants_count, group.creator, group.archived])
+        writer.writerow(header)
+        for obj in objects:
+            row = [getattr(obj, attribute, "") for attribute in attributes]
+            writer.writerow(row)
+    print(f"{name.title()} saved to {path}")
 
 
 def save_users(users: Optional[List[TgUser]]):
@@ -127,13 +156,16 @@ def save_users(users: Optional[List[TgUser]]):
     print(f"Collected {len(users)} users")
     with open(Path(settings.DATA_DIR, "users.csv"), "w") as f:
         writer = csv.writer(f)
-        writer.writerow(["first_name", "last_name", "username", "is_bot", "contact", "archived"])
+        writer.writerow(
+            ["first_name", "last_name", "username", "bio", "is_bot", "contact", "archived"]
+        )
         for user in users:
             writer.writerow(
                 [
                     user.first_name,
                     user.last_name,
                     user.username,
+                    user.bio,
                     user.is_bot,
                     user.contact,
                     user.archived,
@@ -161,6 +193,7 @@ async def collect():
     dialogs_count = len(dialogs)
     print(f"Start processing {dialogs_count} dialogs")
     with stopwatch("extract dialogs"):
+        counter = 0
         for dialog in dialogs:
             if dialog.is_channel:
                 channel = await get_channel_from_dialog(dialog)
@@ -168,12 +201,23 @@ async def collect():
             elif dialog.is_group:
                 groups.append(get_group_from_dialog(dialog))
             elif dialog.is_user and not dialog.entity.support:
-                users.append(get_user_from_dialog(dialog))
+                user = await get_user_from_dialog(dialog)
+                users.append(user)
+            counter += 1
+            if counter % 10 == 0:
+                print(f"Processed {counter}/{dialogs_count} dialogs")
 
     settings.DATA_DIR.mkdir(parents=True, exist_ok=True)
-    save_groups(groups)
-    save_channels(channels)
-    save_users(users)
+
+    store_data(
+        groups, "groups", ["title", ("members", "participants_count"), "creator", "archived"]
+    )
+    store_data(
+        users,
+        "users",
+        ["first_name", "last_name", "username", "bio", "is_bot", "contact", "archived"],
+    )
+    store_data(channels, "channels", ["title", "username", "archived", "about"])
 
 
 def has_session(username: str) -> bool:
