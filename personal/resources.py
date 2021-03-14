@@ -6,7 +6,7 @@ from telethon.tl.functions.channels import GetFullChannelRequest
 from telethon.tl.functions.users import GetFullUserRequest
 
 from .client import get_client
-from .helpers import stopwatch
+from .helpers import async_stopwatch
 from .models import Channel, Group, User
 
 
@@ -18,7 +18,7 @@ async def get_dialogs(
 ) -> List[Dialog]:
     if client is None:
         client = get_client()
-    with stopwatch("download"):
+    async with async_stopwatch("download"):
         dialogs: List[Dialog] = await client.get_dialogs(
             ignore_pinned=True, archived=archived, folder=folder, limit=limit
         )

@@ -1,6 +1,6 @@
-import contextlib
 import logging
 import time
+from contextlib import asynccontextmanager, contextmanager
 from pathlib import Path
 
 from ormar import ExcludableItems
@@ -13,9 +13,19 @@ if settings.TYPE_CHECKING:  # pragma no cover
 logger = logging.getLogger(__name__)
 
 
-@contextlib.contextmanager
+@contextmanager
 def stopwatch(message: str):
     """Context manager to print how long a block of code took."""
+    t0 = time.time()
+    try:
+        yield
+    finally:
+        t1 = time.time()
+        logger.info("Total elapsed time for %s: %.3f" % (message, t1 - t0))
+
+
+@asynccontextmanager
+async def async_stopwatch(message: str):
     t0 = time.time()
     try:
         yield

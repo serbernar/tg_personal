@@ -1,10 +1,10 @@
 import logging
 from datetime import datetime
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional
 
 from telethon.tl.custom.dialog import Dialog
 
-from .helpers import asdict, stopwatch
+from .helpers import asdict, async_stopwatch
 from .resources import DialogResource, get_dialogs
 
 logger = logging.getLogger(__name__)
@@ -14,6 +14,7 @@ class DialogResourceManager:
     def __init__(self, limit=None):
         self._dialog_type_resources: Dict[str, DialogResource] = {}
         self.limit = limit
+        self._counter = 0
 
     def register_resource(self, resource: DialogResource):
         self._dialog_type_resources[resource.name] = resource
@@ -28,30 +29,26 @@ class DialogResourceManager:
         dialogs: List[Dialog] = await get_dialogs(limit=self.limit)
         dialogs_count = len(dialogs)
         logger.info(f"Start processing {dialogs_count} dialogs")
-        with stopwatch("collecting dialogs to buckets"):
+        async with async_stopwatch("collecting dialogs to buckets"):
             for dialog in dialogs:
                 if not dialog.id:
+                    self._counter += 1
                     continue
                 resource = self.get_dialog_resource(dialog)
                 if not resource:
+                    self._counter += 1
                     continue
                 if resource.is_coroutine:
                     result = await resource.callback(dialog)
                 else:
                     result = resource.callback(dialog)
                 resource.bucket.append(result)
-
-    @staticmethod
-    def _normalize(attr) -> Tuple[str, str]:
-        if isinstance(attr, str):
-            return attr, attr
-        if len(attr) == 1:
-            return attr[0], attr[0]
-        return attr
+                self._counter += 1
+                logger.info("Processed %s/%s dialogs", self._counter, dialogs_count)
 
     async def store(self):
         for resource in self._dialog_type_resources.values():
-            with stopwatch(f"update rows in db={resource.model.Meta.tablename}"):
+            async with async_stopwatch(f"update rows in db={resource.model.Meta.tablename}"):
                 for item in resource.bucket:
                     query = resource.model.objects.filter(dialog_id=item.dialog_id)
                     pk = None

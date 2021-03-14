@@ -1,10 +1,11 @@
+#!/usr/bin/env python
 import sqlalchemy
 
 import settings
-from collector.client import get_client
-from collector.db import database, metadata
-from collector.helpers import has_session
-from collector.services import collect_dialogs
+from personal.client import get_client
+from personal.db import database, metadata
+from personal.helpers import has_session
+from personal.services import collect_dialogs
 
 
 def init_db():
@@ -18,7 +19,7 @@ def main():
     if not has_session(settings.USERNAME):
         client.start()
     with client:
-        client.loop.run_until_complete(collect_dialogs())
+        client.loop.run_until_complete(collect_dialogs(limit=50))
 
 
 if __name__ == "__main__":

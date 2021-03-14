@@ -5,11 +5,15 @@ import ormar
 from .db import database, metadata
 
 
-class DateFieldsModel(ormar.Model):
+class BaseModel(ormar.Model):
     class Meta:
         abstract = True
         metadata = metadata
         database = database
+
+    id = ormar.Integer(primary_key=True)
+    dialog_id = ormar.BigInteger(unique=True)
+    is_archived = ormar.Boolean(default=False)
 
     created_at: datetime = ormar.DateTime(default=datetime.now)
     updated_at: datetime = ormar.DateTime(default=datetime.now)
@@ -20,39 +24,27 @@ class BaseMeta(ormar.ModelMeta):
     database = database
 
 
-class Channel(DateFieldsModel):
+class Channel(BaseModel):
     class Meta(BaseMeta):
         tablename = "channels"
-
-    id = ormar.Integer(primary_key=True)
-    dialog_id = ormar.BigInteger(unique=True)
-    is_archived = ormar.Boolean(default=False)
 
     title = ormar.String(max_length=255)
     username = ormar.String(max_length=255, nullable=True)
     about = ormar.Text(nullable=True)
 
 
-class Group(DateFieldsModel):
+class Group(BaseModel):
     class Meta(BaseMeta):
         tablename = "groups"
-
-    id = ormar.Integer(primary_key=True)
-    dialog_id = ormar.BigInteger(unique=True)
-    is_archived = ormar.Boolean(default=False)
 
     participants_count = ormar.Integer()
     title = ormar.String(max_length=255)
     creator = ormar.Boolean(default=False)
 
 
-class User(DateFieldsModel):
+class User(BaseModel):
     class Meta(BaseMeta):
         tablename = "users"
-
-    id = ormar.Integer(primary_key=True)
-    dialog_id = ormar.BigInteger(unique=True)
-    is_archived = ormar.Boolean(default=False)
 
     first_name = ormar.String(max_length=255, nullable=True)
     last_name = ormar.String(max_length=255, nullable=True)
