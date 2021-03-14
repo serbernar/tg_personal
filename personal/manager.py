@@ -13,7 +13,6 @@ class DialogResourceManager:
     def __init__(self, limit=None):
         self._dialog_type_resources: Dict[str, DialogResource] = {}
         self.limit = limit
-        self._counter = 0
 
     def register_resource(self, resource: DialogResource):
         self._dialog_type_resources[resource.name] = resource

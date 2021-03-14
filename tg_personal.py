@@ -19,8 +19,8 @@ def main():
     if not has_session(settings.USERNAME):
         client.start()
     with client:
-        client.loop.run_until_complete(collect_saved_messages(limit=10, iterations=5))
-        client.loop.run_until_complete(collect_dialogs(limit=100))
+        client.loop.run_until_complete(collect_saved_messages(limit=10, iterations=1))
+        client.loop.run_until_complete(collect_dialogs(limit=10))
 
 
 if __name__ == "__main__":

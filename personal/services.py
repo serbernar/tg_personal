@@ -4,6 +4,7 @@ from typing import List
 from telethon.tl.patched import Message
 
 from .client import get_client
+from .helpers import download_media, download_message
 from .manager import DialogResourceManager
 from .models import Channel, Group, User
 from .resources import DialogResource, get_drafts
@@ -41,12 +42,12 @@ async def collect_dialogs(limit=None):
 async def collect_saved_messages(iterations=1, limit=None):
     drafts = await get_drafts()
     client = get_client()
-    # message_filter = InputMessagesFilterEmpty
     offset_id = 0
     for _ in range(iterations):
         messages: List[Message] = await client.get_messages(
             drafts, limit=limit, offset_id=offset_id
         )
         for message in messages:
-            print(message.message)
+            await download_media(message)
+            await download_message(message)
             offset_id = message.id
