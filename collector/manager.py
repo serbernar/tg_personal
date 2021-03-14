@@ -3,7 +3,7 @@ from typing import Dict, List, Optional, Tuple
 
 from telethon.tl.custom.dialog import Dialog
 
-from .helpers import stopwatch
+from .helpers import asdict, stopwatch
 from .resources import DialogResource, get_dialogs
 
 logger = logging.getLogger(__name__)
@@ -52,4 +52,4 @@ class DialogResourceManager:
         for resource in self._dialog_type_resources.values():
             with stopwatch(f"update rows in db={resource.model.Meta.tablename}"):
                 for item in resource.bucket:
-                    await resource.model.objects.update_or_create(**item.as_dict())
+                    await resource.model.objects.update_or_create(**asdict(item, exclude=["id"]))

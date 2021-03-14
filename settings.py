@@ -11,6 +11,8 @@ load_dotenv(ENV_FILE)
 
 DEBUG = getenv("DEBUG", False)
 
+TYPE_CHECKING = getenv("TYPE_CHECKING", False)
+
 API_ID = 3472745
 API_HASH = "5ecf99afe75faf6c60a4350cd56002e8"
 USERNAME = getenv("USERNAME")
