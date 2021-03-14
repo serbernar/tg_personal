@@ -5,7 +5,7 @@ import settings
 from personal.client import get_client
 from personal.db import database, metadata
 from personal.helpers import has_session
-from personal.services import collect_dialogs
+from personal.services import collect_dialogs, collect_saved_messages
 
 
 def init_db():
@@ -19,7 +19,8 @@ def main():
     if not has_session(settings.USERNAME):
         client.start()
     with client:
-        client.loop.run_until_complete(collect_dialogs(limit=50))
+        client.loop.run_until_complete(collect_saved_messages(limit=10, iterations=5))
+        client.loop.run_until_complete(collect_dialogs(limit=100))
 
 
 if __name__ == "__main__":

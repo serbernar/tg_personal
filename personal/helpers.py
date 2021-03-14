@@ -13,25 +13,38 @@ if settings.TYPE_CHECKING:  # pragma no cover
 logger = logging.getLogger(__name__)
 
 
+class MessageContainer:
+    def __init__(self, text):
+        self.text = text
+
+    def get(self):
+        return self.text
+
+    def set(self, value):
+        self.text = value
+
+
 @contextmanager
 def stopwatch(message: str):
     """Context manager to print how long a block of code took."""
     t0 = time.time()
+    container = MessageContainer(message)
     try:
-        yield
+        yield container
     finally:
         t1 = time.time()
-        logger.info("Total elapsed time for %s: %.3f" % (message, t1 - t0))
+        logger.info("Total elapsed time for %s: %.3f" % (container.get(), t1 - t0))
 
 
 @asynccontextmanager
 async def async_stopwatch(message: str):
     t0 = time.time()
+    container = MessageContainer(message)
     try:
-        yield
+        yield container
     finally:
         t1 = time.time()
-        logger.info("Total elapsed time for %s: %.3f" % (message, t1 - t0))
+        logger.info("Total elapsed time for %s: %.3f" % (container.get(), t1 - t0))
 
 
 def has_session(username: str) -> bool:

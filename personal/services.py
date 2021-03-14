@@ -1,8 +1,12 @@
 import logging
+from typing import List
 
+from telethon.tl.patched import Message
+
+from .client import get_client
 from .manager import DialogResourceManager
 from .models import Channel, Group, User
-from .resources import DialogResource
+from .resources import DialogResource, get_drafts
 from .serializers import get_channel_from_dialog, get_group_from_dialog, get_user_from_dialog
 
 logger = logging.getLogger(__name__)
@@ -32,4 +36,17 @@ async def collect_dialogs(limit=None):
     manager.register_resource(groups_dialogs)
     manager.register_resource(users_dialogs)
     await manager.collect()
-    await manager.store()
+
+
+async def collect_saved_messages(iterations=1, limit=None):
+    drafts = await get_drafts()
+    client = get_client()
+    # message_filter = InputMessagesFilterEmpty
+    offset_id = 0
+    for _ in range(iterations):
+        messages: List[Message] = await client.get_messages(
+            drafts, limit=limit, offset_id=offset_id
+        )
+        for message in messages:
+            print(message.message)
+            offset_id = message.id
