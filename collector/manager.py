@@ -1,4 +1,5 @@
 import logging
+from datetime import datetime
 from typing import Dict, List, Optional, Tuple
 
 from telethon.tl.custom.dialog import Dialog
@@ -52,4 +53,13 @@ class DialogResourceManager:
         for resource in self._dialog_type_resources.values():
             with stopwatch(f"update rows in db={resource.model.Meta.tablename}"):
                 for item in resource.bucket:
-                    await resource.model.objects.update_or_create(**asdict(item, exclude=["id"]))
+                    query = resource.model.objects.filter(dialog_id=item.dialog_id)
+                    pk = None
+                    created_at = datetime.now()
+                    if await query.exists():
+                        result = await query.get(dialog_id=item.dialog_id)
+                        pk = result.pk
+                        created_at = result.created_at
+                    await resource.model.objects.update_or_create(
+                        pk=pk, created_at=created_at, **asdict(item, exclude=["id", "created_at"])
+                    )
