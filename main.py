@@ -1,13 +1,14 @@
 import csv
 from dataclasses import dataclass
 from datetime import datetime
-from os import getenv
+from pathlib import Path
 from typing import List, Optional
 
-from dotenv import load_dotenv
 from telethon.sync import TelegramClient
 from telethon.tl.custom.dialog import Dialog
 from telethon.tl.functions.channels import GetFullChannelRequest
+
+import settings
 
 
 @dataclass
@@ -27,6 +28,20 @@ class TgGroup:
     archived: bool
 
 
+_client = None
+
+
+def get_client() -> TelegramClient:
+    global _client
+    if _client is None:
+        _client = TelegramClient(
+            session=settings.USERNAME,
+            api_id=settings.API_ID,
+            api_hash=settings.API_HASH,
+        )
+    return _client
+
+
 def get_group_from_dialog(dialog):
     return TgGroup(
         title=dialog.title,
@@ -37,8 +52,9 @@ def get_group_from_dialog(dialog):
     )
 
 
-async def get_channel_from_dialog(dialog, tg_client):
-    channel_full = await tg_client(GetFullChannelRequest(channel=dialog.title))
+async def get_channel_from_dialog(dialog):
+    client = get_client()
+    channel_full = await client(GetFullChannelRequest(channel=dialog.title))
     about = channel_full.full_chat.about
     return TgChannel(
         title=dialog.title,
@@ -49,33 +65,22 @@ async def get_channel_from_dialog(dialog, tg_client):
 
 
 async def get_dialogs(
-    tg_client: TelegramClient,
     archived: Optional[bool] = None,
     folder: Optional[int] = None,
     limit: Optional[float] = None,
 ):
-    dialogs: List[Dialog] = await tg_client.get_dialogs(
+    client = get_client()
+    dialogs: List[Dialog] = await client.get_dialogs(
         ignore_pinned=True, archived=archived, folder=folder, limit=limit
     )
     return dialogs
 
 
-async def collect(tg_client):
-    print("get dialogs")
-    dialogs: List[Dialog] = await get_dialogs(tg_client=tg_client)
-    groups = []
-    channels = []
-    print(f"processing {len(dialogs)} dialogs")
-    for idx, dialog in enumerate(dialogs, start=1):
-        print(f"processing {idx} dialog")
-        if dialog.is_channel:
-            channel = await get_channel_from_dialog(dialog, tg_client=tg_client)
-            channels.append(channel)
-        elif dialog.is_group:
-            groups.append(get_group_from_dialog(dialog))
-
+def save_groups(groups):
+    if not groups:
+        return
     print(f"Collected {len(groups)} groups")
-    with open("groups.csv", "w") as f:
+    with open(Path(settings.DATA_DIR, "groups.csv"), "w") as f:
         writer = csv.writer(f)
         writer.writerow(["title", "participants_count", "creator", "archived"])
         for group in groups:
@@ -83,8 +88,12 @@ async def collect(tg_client):
                 [group.title, group.participants_count, group.creator, group.archived]
             )
 
-    print(f"Collected {len(channels)} channels")
-    with open("channels.csv", "w") as f:
+
+def save_channels(channels):
+    if not channels:
+        return
+    print(f"Save {len(channels)} channels")
+    with open(Path(settings.DATA_DIR, "channels.csv"), "w") as f:
         writer = csv.writer(f)
         writer.writerow(["title", "username", "archived", "about"])
         for channel in channels:
@@ -93,16 +102,37 @@ async def collect(tg_client):
             )
 
 
-def main():
-    load_dotenv(".env")
-    api_id = int(getenv("API_ID"))
-    api_hash = getenv("API_HASH")
-    username = getenv("USERNAME")
+async def collect():
+    print("get dialogs")
+    dialogs: List[Dialog] = await get_dialogs()
+    groups = []
+    channels = []
+    print(f"processing {len(dialogs)} dialogs")
+    for idx, dialog in enumerate(dialogs, start=1):
+        print(f"processing {idx} dialog")
+        if dialog.is_channel:
+            channel = await get_channel_from_dialog(dialog)
+            channels.append(channel)
+        elif dialog.is_group:
+            groups.append(get_group_from_dialog(dialog))
 
-    client = TelegramClient(username, api_id, api_hash)
+    settings.DATA_DIR.mkdir(parents=True, exist_ok=True)
+    save_groups(groups)
+    save_channels(channels)
+
+
+def check_session():
+    if not Path(f"{settings.USERNAME}.session").exists():
+        client = get_client()
+        client.start()
+
+
+def main():
+    client = get_client()
     with client:
-        client.loop.run_until_complete(collect(tg_client=client))
+        client.loop.run_until_complete(collect())
 
 
 if __name__ == "__main__":
+    check_session()
     main()

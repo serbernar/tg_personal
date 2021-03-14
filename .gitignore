@@ -1,5 +1,9 @@
 .idea/
 env/
+data/
+__pycache__
+*.pyc
+*.session-journal
 *.csv
 *.session
 .env
