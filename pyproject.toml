@@ -1,0 +1,16 @@
+[tool.black]
+line-length = 100
+target-version = ['py38']
+include = '\.pyi?$'
+exclude = '''
+(
+  /(
+      \.git          # root of the project
+    | \.hg
+    | \.mypy_cache
+    | \.pytest_cache
+    | env
+    | data
+  )/
+)
+'''
