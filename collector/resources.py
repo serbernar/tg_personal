@@ -1,4 +1,5 @@
-from typing import List, Optional
+from asyncio.coroutines import iscoroutinefunction
+from typing import List, Optional, Type, Union
 
 from telethon.tl.custom.dialog import Dialog
 from telethon.tl.functions.channels import GetFullChannelRequest
@@ -6,6 +7,7 @@ from telethon.tl.functions.users import GetFullUserRequest
 
 from .client import get_client
 from .helpers import stopwatch
+from .models import Channel, Group, User
 
 
 async def get_dialogs(
@@ -42,3 +44,15 @@ async def get_channel_full_request(channel, client=None):
         client = get_client()
     full = await client(GetFullChannelRequest(channel=channel))
     return full
+
+
+class DialogResource:
+    def __init__(
+        self, name: str, condition, callback, model: Union[Type[User], Type[Group], Type[Channel]]
+    ):
+        self.name = name
+        self.bucket: List[Union[User, Group, Channel]] = []
+        self.condition = condition
+        self.callback = callback
+        self.is_coroutine = iscoroutinefunction(callback)
+        self.model = model

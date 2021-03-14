@@ -1,13 +1,14 @@
 import logging
 
-from .manager import DialogResource, DialogResourceManager
+from .manager import DialogResourceManager
 from .models import Channel, Group, User
+from .resources import DialogResource
 from .serializers import get_channel_from_dialog, get_group_from_dialog, get_user_from_dialog
 
 logger = logging.getLogger(__name__)
 
 
-async def collect_dialogs():
+async def collect_dialogs(limit=None):
     channels_dialogs = DialogResource(
         name="channels",
         condition=lambda d: d.is_channel,
@@ -26,7 +27,7 @@ async def collect_dialogs():
         callback=get_user_from_dialog,
         model=User,
     )
-    manager = DialogResourceManager()
+    manager = DialogResourceManager(limit=limit)
     manager.register_resource(channels_dialogs)
     manager.register_resource(groups_dialogs)
     manager.register_resource(users_dialogs)

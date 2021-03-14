@@ -10,7 +10,7 @@ def get_group_from_dialog(dialog: Dialog) -> Group:
         dialog_id=dialog.id,
         title=dialog.title,
         participants_count=dialog.entity.participants_count,
-        archived=dialog.archived,
+        is_archived=bool(dialog.archived),
         creator=dialog.entity.creator,
     )
 
@@ -25,9 +25,9 @@ async def get_user_from_dialog(dialog: Dialog) -> User:
         last_name=dialog.entity.last_name,
         username=dialog.entity.username,
         bio=full.about,
-        is_bot=dialog.entity.bot,
-        contact=dialog.entity.contact,
-        archived=dialog.archived,
+        is_bot=bool(dialog.entity.bot),
+        is_contact=bool(dialog.entity.contact),
+        is_archived=bool(dialog.archived),
         last_message=last_message,
     )
 
@@ -38,6 +38,6 @@ async def get_channel_from_dialog(dialog: Dialog) -> Channel:
         dialog_id=dialog.id,
         title=dialog.title,
         username=dialog.entity.username,
-        archived=dialog.archived,
+        is_archived=bool(dialog.archived),
         about=full.full_chat.about,
     )
