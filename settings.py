@@ -14,7 +14,7 @@ DEBUG = getenv("DEBUG", False)
 TYPE_CHECKING = getenv("TYPE_CHECKING", False)
 
 API_ID = 3472745
-API_HASH = "5ecf99afe75faf6c60a4350cd56002e8"
+API_HASH = getenv("API_HASH")
 USERNAME = getenv("USERNAME")
 if not USERNAME:
     raise RuntimeError

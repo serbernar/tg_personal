@@ -82,4 +82,4 @@ async def download_media(message: Message):
 
 async def download_message(message: Message):
     await asyncio.sleep(0)
-    print(message.text)
+    logger.info(message.text)
